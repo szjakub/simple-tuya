@@ -26,5 +26,10 @@ int main(void)
     printf("%s\n", frame_str2);
     free(frame_str2);
 
+    uint8_t data[] = {0x02};
+    BytesBucket *bucket = create_bucket(0x00, SEND_DATA_C, 0x6A, CHAR_T, data, NULL);
+    char *bucket_str = bucket_to_str(bucket);
+    printf("%s\n", bucket_str);
+
     return 0;
 }
