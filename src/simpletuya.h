@@ -12,25 +12,25 @@
 
 
 typedef enum {
-    RAW_T = 0x00, // N bytes
-    BOOL_T = 0x01, // 1 bytes
-    INT_T = 0x02, // 4 bytes
-    STR_T = 0x03, // N bytes
-    CHAR_T = 0x04, // 1 bytes
-    BITMAP_T = 0x05 // 1/2/4 bytes
+    TYPE_RAW    = 0x00, // N bytes
+    TYPE_BOOL   = 0x01, // 1 byte
+    TYPE_INT    = 0x02, // 4 bytes
+    TYPE_STR    = 0x03, // N bytes
+    TYPE_CHAR   = 0x04, // 1 byte
+    TYPE_BITMAP = 0x05  // 1/2/4 bytes
 } DataType;
 
 typedef enum {
     // module commands
-    HEALTHCHECK_C = 0x00,
-    GET_INFO_C = 0x01,
-    WORKING_MODE_C = 0x02,
-    NETWORK_STATUS_C = 0x03,
-    SEND_DATA_C = 0x06,
+    CMD_HEALTHCHECK     = 0x00,
+    CMD_GET_INFO        = 0x01,
+    CMD_WORKING_MODE    = 0x02,
+    CMD_NETWORK_STATUS  = 0x03,
+    CMD_SEND_DATA       = 0x06,
 
     // MCU commands
-    RESET_MODULE_C = 0x04,
-    QUERY_DATA_C = 0x07,
+    CMD_RESET_MODULE    = 0x04,
+    CMD_QUERY_DATA      = 0x07,
 } Command;
 
 
@@ -49,9 +49,9 @@ typedef struct DataUnit {
 } DataUnit;
 
 typedef enum {
-    EMPTY = 0,
-    DATA_UNIT,
-    RAW_DATA,
+    DT_EMPTY = 0,
+    DT_UNIT,
+    DT_RAW,
 } FrameDType;
 
 typedef struct DataFrame {
@@ -70,7 +70,7 @@ typedef struct DataFrame {
 } DataFrame;
 
 typedef struct BytesArray {
-    uint8_t bytes[512];
+    uint8_t *bytes;
     size_t len;
 } BytesArray;
 
@@ -86,7 +86,7 @@ typedef struct DataFrameDTO {
     const uint8_t cmd;
     const FrameDType data_type;
     DataUnit *du;
-    const BytesArray *raw_data;
+    BytesArray *raw_data;
 } DataFrameDTO;
 
 
@@ -106,17 +106,17 @@ void free_data_unit(DataUnit *);
 
 void free_bytes_bucket(BytesArray *);
 
-DataFrame *bytes_to_data_frame(uint8_t *, size_t);
+DataFrame *bytes2df(uint8_t *src, size_t len);
 
-DataUnit *bytes_to_data_unit(uint8_t *, size_t);
+DataUnit *bytes2du(uint8_t *src, size_t len);
 
-uint8_t *data_unit_to_bytes(DataUnit *);
+uint8_t *du2bytes(const DataUnit *);
 
-uint8_t *data_frame_to_bytes(DataFrame *);
+uint8_t *df2bytes(const DataFrame *);
 
-void init_data_unit(DataUnit *du, DataUnitDTO *params);
+void init_data_unit(DataUnit *du, const DataUnitDTO *params);
 
-void init_data_frame(DataFrame *frame, DataFrameDTO *params);
+void init_data_frame(DataFrame *frame, const DataFrameDTO *params);
 
 
 #define bytes_to_decimal(T, bytes)                                             \

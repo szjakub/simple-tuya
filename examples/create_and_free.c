@@ -35,18 +35,28 @@
 
 
 int main(void) {
-    DataFrame frame;
-    DataUnit data_unit;
-    DataFrameDTO frame_dto = {.ver=0x03, .cmd=0x69, .data_type=DATA_UNIT, .du=&data_unit, .raw_data=NULL};
-    init_data_frame(&frame, &frame_dto);
-
-
+    // DataFrame frame;
+    // DataUnit data_unit = {
+    //     .dpid=0x69,
+    //     .type=TYPE_INT,
+    //     .value_len=4,
+    //     .value=4
+    // };
+    // DataFrameDTO frame_dto = {
+    //     .ver=0x03,
+    //     .cmd=CMD_QUERY_DATA,
+    //     .data_type=DT_UNIT,
+    //     .du=&data_unit,
+    //     .raw_data=NULL
+    // };
+    // init_data_frame(&frame, &frame_dto);
 
     uint8_t bytes[] = {0x00, 0x00, 0x01,
          0x55, 0xAA, 0x03, 0x07, 0x00, 0x05, 0x69, 0x04, 0x00, 0x01, 0x00, 0x7C};
+    DataFrame *df = bytes2df(bytes, 15);
 
-    BytesArray bytes2;
-
+    char *str = frame_to_str(df);
+    printf("%s", str);
 
 
 
