@@ -55,11 +55,35 @@ int main(void) {
          0x55, 0xAA, 0x03, 0x07, 0x00, 0x05, 0x69, 0x04, 0x00, 0x01, 0x00, 0x7C};
     DataFrame *df = bytes2df(bytes, 15);
 
-    char *str = frame_to_str(df);
-    printf("%s", str);
+    // char *str = frame_to_str(df);
+
+    DataUnit du;
+    DataUnitDTO du_dto = {.dpid=0x69, .type=TYPE_INT, .int_value=256};
+    init_data_unit(&du, &du_dto);
+
+    DataFrame df2;
+    DataFrameDTO df_dto = {
+        .version=0x03,
+        .command=CMD_QUERY_DATA,
+        .data_type=DT_UNIT,
+        .data_unit=&du
+    };
+    init_data_frame(&df2, &df_dto);
+
+    BytesArray arr;
+    df2bytes(&arr, &df2);
+
+    // char *str = frame_to_str(&df2);
+    //
+    // printf("%s", str);
+    //
+    for (int i=0; i<arr.len; i++) {
+        printf("%d ", arr.bytes[i]);
+    }
+    printf("\n %lu \n", arr.len);
 
 
-
+    return 0;
 
 
 }

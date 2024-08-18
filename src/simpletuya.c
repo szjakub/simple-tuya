@@ -33,6 +33,12 @@ bool u8_in_array(uint8_t value, const uint8_t *array, size_t size) {
     return false;
 }
 
+void u16_to_bytes(uint8_t *dest, uint16_t value) {
+    for (size_t i = 0; i < sizeof(value); i++) {
+      dest[i] = (value >> ((sizeof(value) - 1) * 8)) & 0xFF;
+    }
+}
+
 uint8_t calculate_bytes_checksum(uint8_t *bytes, size_t len) {
     int sum = 0;
     for (size_t i = 0; i < len; i++)
@@ -68,7 +74,7 @@ uint8_t calculate_frame_checksum(DataFrame *frame) {
         sum += du_len_bytes[0];
         sum += du_len_bytes[1];
 
-        uint8_t buffer[512];
+        uint8_t buffer[DATA_BUFFER_SIZE];
 
         switch (du->type) {
             case TYPE_INT:
@@ -134,17 +140,15 @@ char *frame_to_str(DataFrame *frame) {
         p += sprintf(p, "%02X ", du->type);
         p += sprintf(p, "%04X ", du->value_len);
 
-        uint8_t buffer[512];
+        uint8_t buffer[DATA_BUFFER_SIZE];
 
         switch (du->type) {
             case TYPE_INT:
-                printf("%d", du->int_value);
                 decimal_to_bytes(buffer, du->int_value);
                 du->value_len = 4;
                 break;
             case TYPE_CHAR:
             case TYPE_BOOL:
-                printf("%d", du->byte_value);
                 buffer[0] = du->byte_value;
                 du->value_len = 1;
                 break;
@@ -278,64 +282,63 @@ DataFrame *bytes2df(uint8_t *src, size_t len) {
     return frame;
 }
 
-uint8_t *du2bytes(const DataUnit *du) {
+void *du2bytes(uint8_t *dest, const DataUnit *du) {
     const size_t du_size = DU_MIN_SIZE + du->value_len;
-    uint8_t *du_bytes = (uint8_t *) malloc(sizeof(uint8_t) * du_size);
 
-    du_bytes[0] = du->dpid;
-    du_bytes[1] = du->type;
+    dest[0] = du->dpid;
+    dest[1] = du->type;
 
     uint8_t du_len_bytes[2];
     decimal_to_bytes(du_len_bytes, du->value_len);
 
-    du_bytes[2] = du_len_bytes[0];
-    du_bytes[3] = du_len_bytes[1];
+    dest[2] = du_len_bytes[0];
+    dest[3] = du_len_bytes[1];
 
     switch (du->type) {
         case TYPE_INT:
-            uint8_t buffer[4];
-            decimal_to_bytes(buffer, du->int_value);
-            memcpy(du_bytes + 4, buffer, sizeof(uint8_t) * 4);
+            uint8_t int_bytes[4];
+            decimal_to_bytes(int_bytes, du->int_value);
+            memcpy(dest + 4, int_bytes, sizeof(uint8_t) * 4);
             break;
         case TYPE_CHAR:
         case TYPE_BOOL:
-            du_bytes[4] = du->byte_value;
+            dest[4] = du->byte_value;
             break;
         case TYPE_RAW:
         case TYPE_STR:
         case TYPE_BITMAP:
-            memcpy(du_bytes + 4, du->array_value, sizeof(uint8_t) * du->value_len);
+            memcpy(dest + 4, du->array_value, sizeof(uint8_t) * du->value_len);
             break;
     }
-    return du_bytes;
+    return 0;
 }
 
-uint8_t *df2bytes(const DataFrame *frame) {
+void *df2bytes(BytesArray *dest, const DataFrame *frame) {
     const uint16_t frame_size = DF_MIN_SIZE + frame->data_len;
-    uint8_t *frame_bytes = (uint8_t *) malloc(sizeof(uint8_t) * frame_size);
 
     uint8_t header_bytes[2];
     decimal_to_bytes(header_bytes, frame->header);
-    memcpy(frame_bytes, header_bytes, sizeof(uint8_t) * 2);
+    memcpy(dest->bytes, header_bytes, sizeof(uint8_t) * 2);
 
-    frame_bytes[2] = frame->version;
-    frame_bytes[3] = frame->command;
+    dest->bytes[2] = frame->version;
+    dest->bytes[3] = frame->command;
 
     uint8_t data_len_bytes[2];
     decimal_to_bytes(data_len_bytes, frame->data_len);
-    memcpy(frame_bytes + 4, data_len_bytes, sizeof(uint8_t) * 2);
+    memcpy(dest->bytes + 4, data_len_bytes, sizeof(uint8_t) * 2);
 
-    if (frame->data_type == DT_UNIT) {
-        uint8_t *du_bytes = du2bytes(frame->data_unit);
-        memcpy(frame_bytes + 6, du_bytes, frame->data_len);
-        free(du_bytes);
-    } else if (frame->data_type == DT_RAW) {
-        for (size_t i = 0; i < frame->data_len; i++) {
-            frame_bytes[6 + i] = frame->raw_data[i];
-        }
+    dest->len = DF_MIN_SIZE + frame->data_len;
+    switch (frame->data_type) {
+        case DT_UNIT:
+            du2bytes(dest->bytes + 6, frame->data_unit);
+            break;
+        case DT_RAW:
+            memcpy(dest->bytes + 6, frame->raw_data, sizeof(uint8_t) * frame->data_len);
+            break;
+        case DT_EMPTY:
+            break;
     }
-    frame_bytes[DF_MIN_SIZE - 1 + frame->data_len] = frame->checksum;
-    return frame_bytes;
+    dest->bytes[dest->len - 1] = frame->checksum;
 }
 //
 //
@@ -376,39 +379,47 @@ void init_data_unit(DataUnit *du, const DataUnitDTO *params) {
 
     switch (params->type) {
         case TYPE_INT:
-            du->int_value = *(uint8_t *) params->value;
+            du->int_value = params->int_value;
             du->value_len = 4;
             break;
         case TYPE_BOOL:
         case TYPE_CHAR:
-            du->byte_value = *(uint8_t *) params->value;
+            du->byte_value = params->byte_value;
             du->value_len = 1;
             break;
         case TYPE_RAW:
         case TYPE_STR:
         case TYPE_BITMAP:
-            du->array_value = (uint8_t *) params->value;
-            du->value_len = params->value_len;
+            size_t alloc_size = sizeof(uint8_t) * params->array_value->len;
+            uint8_t *value = (uint8_t *) malloc(alloc_size);
+            memcpy(value, params->array_value->bytes, alloc_size);
+            du->array_value = value;
+            du->value_len = params->array_value->len;
             break;
     }
 }
 
+
 void init_data_frame(DataFrame *frame, const DataFrameDTO *params) {
     frame->header = bytes_to_decimal(uint16_t, TUYA_FRAME_HEADER);
-    frame->version = params->ver;
-    frame->command = params->cmd;
+    frame->version = params->version;
+    frame->command = params->command;
+    frame->data_type = params->data_type;
 
     switch (params->data_type) {
         case DT_EMPTY: {
             frame->data_len = 0;
+            break;
         }
         case DT_UNIT: {
-            frame->data_unit = params->du;
-            frame->data_len = DU_MIN_SIZE + params->du->value_len;
+            frame->data_unit = params->data_unit;
+            frame->data_len = DU_MIN_SIZE + params->data_unit->value_len;
+            break;
         }
         case DT_RAW: {
             frame->raw_data = params->raw_data->bytes;
             frame->data_len = params->raw_data->len;
+            break;
         }
     }
     frame->checksum = calculate_frame_checksum(frame);

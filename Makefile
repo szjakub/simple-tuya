@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-g -Wall -Wextra
+CFLAGS=-g -o0 -Wall -Wextra
 LDFLAGS=
 
 SRC_DIR=src
@@ -17,7 +17,7 @@ all: $(EXAMPLE_BINS)
 $(BIN_DIR)/%: $(OBJS) $(EXAMPLES_DIR)/%.c | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $^
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(SRC_DIR)/%.h | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR) $(BIN_DIR):

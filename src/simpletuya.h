@@ -10,6 +10,8 @@
 #define HEADER_SIZE 2
 #define DU_COMMANDS_COUNT 4
 
+#define DATA_BUFFER_SIZE 512
+
 
 typedef enum {
     TYPE_RAW    = 0x00, // N bytes
@@ -33,7 +35,6 @@ typedef enum {
     CMD_QUERY_DATA      = 0x07,
 } Command;
 
-
 typedef struct DataUnit {
     uint8_t dpid;
     uint8_t type;
@@ -41,10 +42,10 @@ typedef struct DataUnit {
 
     union {
         int int_value;
-        // raw & str & bitmap
-        uint8_t *array_value;
         // char & bool
         uint8_t byte_value;
+        // raw & str & bitmap
+        uint8_t *array_value;
     };
 } DataUnit;
 
@@ -62,6 +63,7 @@ typedef struct DataFrame {
     FrameDType data_type;
 
     union {
+        // TODO: use struct instead of pointers
         DataUnit *data_unit;
         uint8_t *raw_data;
     };
@@ -70,27 +72,34 @@ typedef struct DataFrame {
 } DataFrame;
 
 typedef struct BytesArray {
-    uint8_t *bytes;
     size_t len;
+    uint8_t bytes[DATA_BUFFER_SIZE];
 } BytesArray;
 
 typedef struct DataUnitDTO {
     const uint8_t dpid;
     const uint8_t type;
-    void *value;
-    const uint16_t value_len;
+    union {
+        int int_value;
+        uint8_t byte_value;
+        // TODO: use struct instead of pointers
+        BytesArray *array_value;
+    };
 } DataUnitDTO;
 
 typedef struct DataFrameDTO {
-    const uint8_t ver;
-    const uint8_t cmd;
+    const uint8_t version;
+    const uint8_t command;
     const FrameDType data_type;
-    DataUnit *du;
-    BytesArray *raw_data;
+    union {
+        // TODO: use struct instead of pointers
+        DataUnit *data_unit;
+        BytesArray *raw_data;
+    };
 } DataFrameDTO;
 
 
-void u16_to_bytes(uint16_t value, uint8_t *dest);
+void u16_to_bytes(uint8_t *dest, uint16_t value);
 
 uint8_t calculate_bytes_checksum(uint8_t *, size_t);
 
@@ -110,30 +119,33 @@ DataFrame *bytes2df(uint8_t *src, size_t len);
 
 DataUnit *bytes2du(uint8_t *src, size_t len);
 
-uint8_t *du2bytes(const DataUnit *);
+void *du2bytes(uint8_t *dest, const DataUnit *);
 
-uint8_t *df2bytes(const DataFrame *);
+void *df2bytes(BytesArray *dest, const DataFrame *frame);
 
 void init_data_unit(DataUnit *du, const DataUnitDTO *params);
 
 void init_data_frame(DataFrame *frame, const DataFrameDTO *params);
 
 
-#define bytes_to_decimal(T, bytes)                                             \
-  ({                                                                           \
-    T value = 0;                                                               \
-    size_t j = sizeof(T);                                                      \
-    for (size_t i = 0; i < sizeof(T); i++) {                                   \
-      value |= (T)bytes[--j] << (8 * i);                                       \
-    }                                                                          \
-    value;                                                                     \
+#define bytes_to_decimal(T, bytes)                                              \
+  ({                                                                            \
+    T value = 0;                                                                \
+    size_t j = sizeof(T);                                                       \
+    for (size_t i = 0; i < sizeof(T); i++) {                                    \
+      value |= (T)bytes[--j] << (8 * i);                                        \
+    }                                                                           \
+    value;                                                                      \
   })
 
-#define decimal_to_bytes(dest, value)                                          \
-  ({                                                                           \
-    for (size_t i = 0; i < sizeof(value); i++) {                               \
-      dest[i] = (value >> ((sizeof(value) - 1) * 8)) & 0xFF;                   \
-    }                                                                          \
-  })
+
+#define decimal_to_bytes(dest, value)                                           \
+({                                                                              \
+    uint8_t *le_array = (uint8_t *) &value;                                     \
+    int j = 0;                                                                  \
+    for (int i=sizeof(value) - 1; i>=0; i--) {                                  \
+        dest[j++] = le_array[i];                                                \
+    }                                                                           \
+})
 
 #endif
