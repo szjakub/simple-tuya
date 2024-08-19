@@ -119,9 +119,9 @@ DataFrame *bytes2df(uint8_t *src, size_t len);
 
 DataUnit *bytes2du(uint8_t *src, size_t len);
 
-void *du2bytes(uint8_t *dest, const DataUnit *);
+void du2bytes(uint8_t *dest, const DataUnit *);
 
-void *df2bytes(BytesArray *dest, const DataFrame *frame);
+void df2bytes(BytesArray *dest, const DataFrame *frame);
 
 void init_data_unit(DataUnit *du, const DataUnitDTO *params);
 

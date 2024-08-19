@@ -33,11 +33,6 @@ bool u8_in_array(uint8_t value, const uint8_t *array, size_t size) {
     return false;
 }
 
-void u16_to_bytes(uint8_t *dest, uint16_t value) {
-    for (size_t i = 0; i < sizeof(value); i++) {
-      dest[i] = (value >> ((sizeof(value) - 1) * 8)) & 0xFF;
-    }
-}
 
 uint8_t calculate_bytes_checksum(uint8_t *bytes, size_t len) {
     int sum = 0;
@@ -45,6 +40,7 @@ uint8_t calculate_bytes_checksum(uint8_t *bytes, size_t len) {
         sum += bytes[i];
     return sum % 256;
 }
+
 
 uint8_t calculate_frame_checksum(DataFrame *frame) {
     int sum = 0;
@@ -102,7 +98,6 @@ uint8_t calculate_frame_checksum(DataFrame *frame) {
             sum += frame->raw_data[i];
         }
     }
-
     return sum % 256;
 }
 
@@ -111,6 +106,7 @@ bool is_frame_valid(DataFrame *frame) {
     uint8_t checksum = calculate_frame_checksum(frame);
     return checksum == frame->checksum;
 }
+
 
 char *bytes_array_to_str(BytesArray *bytes_array) {
     char *str = (char *) malloc(sizeof(uint8_t) * bytes_array->len * 5);
@@ -122,6 +118,7 @@ char *bytes_array_to_str(BytesArray *bytes_array) {
 
     return str;
 }
+
 
 char *frame_to_str(DataFrame *frame) {
     char *str, *p;
@@ -174,12 +171,14 @@ char *frame_to_str(DataFrame *frame) {
     return str;
 }
 
+
 void free_data_unit(DataUnit *du) {
     if (du->type == TYPE_RAW || du->type == TYPE_STR || du->type == TYPE_BITMAP) {
         free(du->array_value);
     }
     free(du);
 }
+
 
 void free_data_frame(DataFrame *frame) {
     if (frame->data_type == DT_UNIT) {
@@ -191,10 +190,6 @@ void free_data_frame(DataFrame *frame) {
     free(frame);
 }
 
-// void free_bytes_bytes_array(BytesArray *bytes_array) {
-//     free(bytes_array->bytes);
-//     free(bytes_array);
-// }
 
 DataUnit *bytes2du(uint8_t *bytes, size_t len) {
     if (len < 4)
@@ -225,6 +220,7 @@ DataUnit *bytes2du(uint8_t *bytes, size_t len) {
     }
     return du;
 }
+
 
 DataFrame *bytes2df(uint8_t *src, size_t len) {
     /*
@@ -282,7 +278,8 @@ DataFrame *bytes2df(uint8_t *src, size_t len) {
     return frame;
 }
 
-void *du2bytes(uint8_t *dest, const DataUnit *du) {
+
+void du2bytes(uint8_t *dest, const DataUnit *du) {
     const size_t du_size = DU_MIN_SIZE + du->value_len;
 
     dest[0] = du->dpid;
@@ -310,10 +307,10 @@ void *du2bytes(uint8_t *dest, const DataUnit *du) {
             memcpy(dest + 4, du->array_value, sizeof(uint8_t) * du->value_len);
             break;
     }
-    return 0;
 }
 
-void *df2bytes(BytesArray *dest, const DataFrame *frame) {
+
+void df2bytes(BytesArray *dest, const DataFrame *frame) {
     const uint16_t frame_size = DF_MIN_SIZE + frame->data_len;
 
     uint8_t header_bytes[2];
@@ -340,38 +337,7 @@ void *df2bytes(BytesArray *dest, const DataFrame *frame) {
     }
     dest->bytes[dest->len - 1] = frame->checksum;
 }
-//
-//
-// uint8_t *data_frame_to_bytes(const DataFrame *frame, BytesArray *dest) {
-//     uint8_t header_bytes[2];
-//     decimal_to_bytes(header_bytes, frame->header);
-//
-//     uint8_t data_len_bytes[2];
-//     decimal_to_bytes(data_len_bytes, frame->data_len);
-//
-//     const uint16_t frame_size = DF_MIN_SIZE + frame->data_len;
-//
-//     uint8_t *frame_bytes = (uint8_t *) malloc(sizeof(uint8_t) * frame_size);
-//
-//     frame_bytes[0] = header_bytes[0];
-//     frame_bytes[1] = header_bytes[1];
-//     frame_bytes[2] = frame->version;
-//     frame_bytes[3] = frame->command;
-//     frame_bytes[4] = data_len_bytes[0];
-//     frame_bytes[5] = data_len_bytes[1];
-//
-//     if (frame->data_type == DATA_UNIT) {
-//         uint8_t *du_bytes = data_unit_to_bytes(frame->data_unit);
-//         memcpy(frame_bytes + 6, du_bytes, frame->data_len);
-//         free(du_bytes);
-//     } else if (frame->data_type == RAW_DATA) {
-//         for (size_t i = 0; i < frame->data_len; i++) {
-//             frame_bytes[6 + i] = frame->raw_data[i];
-//         }
-//     }
-//     frame_bytes[DF_MIN_SIZE - 1 + frame->data_len] = frame->checksum;
-//     return frame_bytes;
-// }
+
 
 void init_data_unit(DataUnit *du, const DataUnitDTO *params) {
     du->dpid = params->dpid;
@@ -425,75 +391,3 @@ void init_data_frame(DataFrame *frame, const DataFrameDTO *params) {
     frame->checksum = calculate_frame_checksum(frame);
 }
 
-
-// BytesArray *create_bytes_array(uint8_t ver, uint8_t cmd, DataUnitParams *du_params)
-// {
-//
-//     if (du_params != NULL)
-//     {
-//         switch (du_params->type)
-//         {
-//             case BOOL_T:
-//             case CHAR_T:
-//         }
-//     }
-// }
-//
-//
-// BytesArray *create_bytes_array(uint8_t ver, uint8_t cmd, DataUnitParams *du_params)
-// {
-//     // TODO: Rewrite this shit
-//     BytesArray *bytes_array = (BytesArray *)malloc(sizeof(BytesArray));
-//
-//     size_t data_unit_len = 0;
-//     size_t data_unit_value_len = 0;
-//     uint8_t *value_bytes = NULL;
-//
-//     if (du_params->dpid)
-//     {
-//         switch (du_params->type)
-//         {
-//         case BOOL_T:
-//         case CHAR_T:
-//             data_unit_value_len = 1;
-//
-//             value_bytes = decimal_to_bytes(*(uint8_t *)du_params->value);
-//             break;
-//         case INT_T:
-//             data_unit_value_len = 4;
-//
-//             value_bytes = decimal_to_bytes(*(int *)du_params->value);
-//             break;
-//         default: // for other cases length has to be specified
-//         {
-//             if (du_params->value_len == NULL)
-//                 return NULL;
-//             data_unit_value_len = *(size_t *)du_params->value_len;
-//             value_bytes = (uint8_t *)du_params->value;
-//         }
-//         }
-//         data_unit_len = data_unit_value_len + DU_MIN_SIZE;
-//
-//     }
-//
-//     size_t frame_len = DF_MIN_SIZE + data_unit_len;
-//     uint8_t *bytes = (uint8_t *)malloc(sizeof(uint8_t) * frame_len);
-//
-//     bytes[0] = 0x55;
-//     bytes[1] = 0xAA;
-//     bytes[2] = ver;
-//     bytes[3] = cmd;
-//
-//     if (du_params->dpid)
-//     {
-//         bytes[4] = du_params->dpid;
-//         bytes[5] = du_params->type;
-//         memcpy(bytes + 6, du_params->value_len, 2);
-//         memcpy(bytes + 8, value_bytes, data_unit_value_len);
-//     }
-//     bytes[frame_len - 1] = calculate_bytes_checksum(bytes, frame_len - 1);
-//
-//     bytes_array->bytes = bytes;
-//     bytes_array->len = frame_len;
-//     return bytes_array;
-// }
