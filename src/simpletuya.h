@@ -35,6 +35,39 @@ typedef enum {
     CMD_QUERY_DATA      = 0x07,
 } Command;
 
+typedef enum {
+    STATE_RESTARTED = 0x00,
+    STATE_RUNNING   = 0x01
+} LastState;
+
+typedef enum {
+    // The SIM card is not connected.
+    STATUS_1 = 0x00,
+
+    // The module searches for cellular networks.
+    STATUS_2 = 0x01,
+
+    // The module is registered with the cellular network
+    // but not connected to the network.
+    STATUS_3 = 0x02,
+
+    // The module is connected to the network and gets an IP address.
+    STATUS_4 = 0x03,
+
+    // The module has been connected to the cloud.
+    STATUS_5 = 0x04,
+
+    // SIM card registration is denied,
+    // which might be because it is not subscribed to a cellular service provider.
+    STATUS_6 = 0x05,
+
+    // The module is ready for pairing.
+    STATUS_7 = 0x06,
+
+    // Unknown status
+    STATUS_8 = 0xFF,
+} NetworkStatus;
+
 typedef struct DataUnit {
     uint8_t dpid;
     uint8_t type;
