@@ -292,11 +292,12 @@ void du2bytes(uint8_t *dest, const DataUnit *du) {
     dest[3] = du_len_bytes[1];
 
     switch (du->type) {
-        case TYPE_INT:
+        case TYPE_INT: {
             uint8_t int_bytes[4];
             decimal_to_bytes(int_bytes, du->int_value);
             memcpy(dest + 4, int_bytes, sizeof(uint8_t) * 4);
             break;
+        }
         case TYPE_CHAR:
         case TYPE_BOOL:
             dest[4] = du->byte_value;
@@ -355,13 +356,14 @@ void init_data_unit(DataUnit *du, const DataUnitDTO *params) {
             break;
         case TYPE_RAW:
         case TYPE_STR:
-        case TYPE_BITMAP:
+        case TYPE_BITMAP: {
             size_t alloc_size = sizeof(uint8_t) * params->array_value->len;
             uint8_t *value = (uint8_t *) malloc(alloc_size);
             memcpy(value, params->array_value->bytes, alloc_size);
             du->array_value = value;
             du->value_len = params->array_value->len;
             break;
+        }
     }
 }
 

@@ -25,7 +25,7 @@ typedef enum {
 typedef enum {
     // module commands
     CMD_HEALTHCHECK     = 0x00,
-    CMD_GET_INFO        = 0x01,
+    CMD_QUERY_PROD_INFO = 0x01,
     CMD_WORKING_MODE    = 0x02,
     CMD_NETWORK_STATUS  = 0x03,
     CMD_SEND_DATA       = 0x06,
