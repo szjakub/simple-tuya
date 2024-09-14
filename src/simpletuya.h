@@ -138,6 +138,8 @@ uint8_t calculate_bytes_checksum(uint8_t *, size_t);
 
 bool is_frame_valid(DataFrame *);
 
+char *bytes_array_to_str(BytesArray *);
+
 char *bucket_to_str(BytesArray *);
 
 char *frame_to_str(DataFrame *);
