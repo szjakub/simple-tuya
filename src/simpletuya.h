@@ -29,6 +29,7 @@ typedef enum {
     CMD_WORKING_MODE    = 0x02,
     CMD_NETWORK_STATUS  = 0x03,
     CMD_SEND_DATA       = 0x06,
+    CMD_QUERY_STATUS    = 0x08,
 
     // MCU commands
     CMD_RESET_MODULE    = 0x04,
@@ -162,6 +163,7 @@ void init_data_unit(DataUnit *du, const DataUnitDTO *params);
 
 void init_data_frame(DataFrame *frame, const DataFrameDTO *params);
 
+extern const uint8_t TUYA_FRAME_HEADER[HEADER_SIZE];
 
 #define bytes_to_decimal(T, bytes)                                              \
   ({                                                                            \

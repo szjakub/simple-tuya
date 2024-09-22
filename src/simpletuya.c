@@ -1,24 +1,36 @@
+/*
+ *   Example of a Raw Data Frame
+ *
+ *   | Header | Version | Command | Data Length |           Data            | Checksum |
+ *   |  55 AA |    03   |   07    |    00 08    | 6D 02 00 04 00 00 00 3B   |    BF    |
+ *
+ *   The 'Data' field can be parsed into a Data Unit:
+ *
+ *   | DPID | Type | Length |     Value     |
+ *   | 6D   | 02   | 00 04  |  00 00 00 3B  |
+ *
+ *   Explanation:
+ *   - **Header (0x55AA):** Indicates the start of the frame.
+ *   - **Version (0x03):** Specifies the protocol version.
+ *   - **Command (0x07):** Denotes the command type.
+ *   - **Data Length (0x0008):** Length of the data field in bytes.
+ *   - **Data:** Contains the Data Unit, which includes DPID, Type, Length, and Value.
+ *   - **Checksum (0xBF):** Used for error detection.
+ *
+ *   Data Unit Breakdown:
+ *   - **DPID (0x6D):** Data Point ID, identifies the data point.
+ *   - **Type (0x02):** Data type (e.g., integer, string, etc.).
+ *   - **Length (0x0004):** Length of the value field in bytes.
+ *   - **Value (0x0000003B):** The actual data value being transmitted.
+ *
+ */
+
 #include "simpletuya.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/*
- *   Example raw frame
- *
- *   data_frame
- *   |  header | version | command | data length |          data           | checksum |
- *   |  55 AA  |    03   |    07   |    00 08    | 6D 02 00 04 00 00 00 3B |    BF    |
- *
- *   data can be parsed into data unit
- *
- *   data_unit
- *   | dpid | type |  len  |   value     |
- *   |  6D  |  02  | 00 04 | 00 00 00 3B |
- *
- *
- */
 
 const uint16_t TUYA_FRAME_HEADER_SHORT = 0x55AA;
 const uint8_t TUYA_FRAME_HEADER[HEADER_SIZE] = {0x55, 0xAA};
