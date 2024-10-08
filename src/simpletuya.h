@@ -85,7 +85,7 @@ typedef struct DataUnit {
     uint16_t value_len;
 
     union {
-        uint32_t int_value;
+        int int_value;
         // char & bool
         uint8_t byte_value;
         // raw & str & bitmap
