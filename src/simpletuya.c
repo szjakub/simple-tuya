@@ -37,6 +37,100 @@ const uint8_t TUYA_FRAME_HEADER[HEADER_SIZE] = {0x55, 0xAA};
 
 const uint8_t DU_COMMAND_IDS[DU_COMMANDS_COUNT] = {0x06, 0x07, 0x22, 0x26};
 
+uint64_t bytes_to_u64(const uint8_t *bytes, size_t size) {
+    uint64_t value = 0;
+    for (size_t i = 0; i < size; i++) {
+        value |= (uint64_t)bytes[size - 1 - i] << (8 * i);
+    }
+    return value;
+}
+
+bool parse_byte(BytesArray *dest, uint8_t in_byte)
+{
+    static ParserState state = STATE_HEADER_HIGH;
+    static uint16_t data_len = 0;
+    static uint16_t data_idx = 0;
+
+    switch (state) {
+        case STATE_HEADER_HIGH: {
+            if (in_byte == 0x55) {
+                dest->bytes[dest->len++] = in_byte;
+                state = STATE_HEADER_LOW;
+            } else {
+                dest->len = 0;
+            }
+            break;
+        }
+
+        case STATE_HEADER_LOW: {
+            if (in_byte == 0xAA) {
+                state = STATE_VERSION;
+                dest->bytes[dest->len++] = in_byte;
+            } else {
+                state = STATE_HEADER_HIGH;
+                dest->len = 0;
+            }
+            break;
+        }
+
+        case STATE_VERSION: {
+            state = STATE_COMMAND;
+            dest->bytes[dest->len++] = in_byte;
+            break;
+        }
+
+        case STATE_COMMAND: {
+            state = STATE_DATA_LEN_HIGH;
+            dest->bytes[dest->len++] = in_byte;
+            break;
+        }
+
+        case STATE_DATA_LEN_HIGH: {
+            state = STATE_DATA_LEN_LOW;
+            dest->bytes[dest->len++] = in_byte;
+            data_len = in_byte << 8;
+            break;
+        }
+
+        case STATE_DATA_LEN_LOW: {
+            dest->bytes[dest->len++] = in_byte;
+            data_len |= in_byte;
+
+            if (data_len > DATA_BUFFER_SIZE - DF_MIN_SIZE) {
+                state = STATE_HEADER_HIGH;
+                data_len = 0;
+                dest->len = 0;
+            } else if (data_len == 0) {
+                state = STATE_CHECKSUM;
+            } else {
+                data_idx = 0;
+                state = STATE_DATA;
+            }
+            break;
+        }
+
+        case STATE_DATA: {
+            dest->bytes[dest->len++] = in_byte;
+            data_idx++;
+            if (data_idx >= data_len) {
+                state = STATE_CHECKSUM;
+            }
+            break;
+        }
+
+        case STATE_CHECKSUM: {
+            uint8_t expected_checksum = calculate_bytes_checksum(dest->bytes, dest->len);
+            dest->bytes[dest->len++] = in_byte;
+            state = STATE_HEADER_HIGH;
+            data_len = 0;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
 bool u8_in_array(uint8_t value, const uint8_t *array, size_t size) {
     for (size_t i = 0; i < size; i++) {
         if (array[i] == value)
@@ -217,7 +311,7 @@ DataUnit *bytes2du(uint8_t *bytes, size_t len) {
 
     switch (du->type) {
         case TYPE_INT:
-            du->int_value = bytes_to_decimal(int, (bytes + 3));
+            du->int_value = bytes_to_decimal(int, (bytes + 4));
             break;
         case TYPE_CHAR:
         case TYPE_BOOL:
@@ -227,7 +321,7 @@ DataUnit *bytes2du(uint8_t *bytes, size_t len) {
         case TYPE_STR:
         case TYPE_BITMAP:
             du->array_value = (uint8_t *) malloc(sizeof(uint8_t) * du->value_len);
-            memcpy(du->array_value, bytes + 3, du->value_len);
+            memcpy(du->array_value, bytes + 4, du->value_len);
             break;
     }
     return du;

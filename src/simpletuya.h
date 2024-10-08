@@ -12,6 +12,16 @@
 
 #define DATA_BUFFER_SIZE 512
 
+typedef enum ParserState {
+    STATE_HEADER_HIGH,
+    STATE_HEADER_LOW,
+    STATE_VERSION,
+    STATE_COMMAND,
+    STATE_DATA_LEN_HIGH,
+    STATE_DATA_LEN_LOW,
+    STATE_DATA,
+    STATE_CHECKSUM
+} ParserState;
 
 typedef enum {
     TYPE_RAW    = 0x00, // N bytes
@@ -75,7 +85,7 @@ typedef struct DataUnit {
     uint16_t value_len;
 
     union {
-        int int_value;
+        uint32_t int_value;
         // char & bool
         uint8_t byte_value;
         // raw & str & bitmap
@@ -132,6 +142,7 @@ typedef struct DataFrameDTO {
     };
 } DataFrameDTO;
 
+bool parse_byte(BytesArray *dest, uint8_t in_byte);
 
 void u16_to_bytes(uint8_t *dest, uint16_t value);
 
@@ -165,24 +176,24 @@ void init_data_frame(DataFrame *frame, const DataFrameDTO *params);
 
 extern const uint8_t TUYA_FRAME_HEADER[HEADER_SIZE];
 
-#define bytes_to_decimal(T, bytes)                                              \
-  ({                                                                            \
-    T value = 0;                                                                \
-    size_t j = sizeof(T);                                                       \
-    for (size_t i = 0; i < sizeof(T); i++) {                                    \
-      value |= (T)bytes[--j] << (8 * i);                                        \
-    }                                                                           \
-    value;                                                                      \
+#define bytes_to_decimal(T, bytes)                                \
+  ({                                                              \
+    T value = 0;                                                  \
+    size_t j = sizeof(T);                                         \
+    for (size_t i = 0; i < sizeof(T); i++) {                      \
+      value |= (T)bytes[--j] << (8 * i);                          \
+    }                                                             \
+    value;                                                        \
   })
 
 
-#define decimal_to_bytes(dest, value)                                           \
-({                                                                              \
-    uint8_t *le_array = (uint8_t *) &value;                                     \
-    int j = 0;                                                                  \
-    for (int i=sizeof(value) - 1; i>=0; i--) {                                  \
-        dest[j++] = le_array[i];                                                \
-    }                                                                           \
+#define decimal_to_bytes(dest, value)                             \
+({                                                                \
+    uint8_t *le_array = (uint8_t *) &value;                       \
+    int j = 0;                                                    \
+    for (int i=sizeof(value) - 1; i>=0; i--) {                    \
+        dest[j++] = le_array[i];                                  \
+    }                                                             \
 })
 
 #endif
