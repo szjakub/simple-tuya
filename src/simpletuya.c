@@ -315,7 +315,7 @@ DataUnit *bytes2du(uint8_t *bytes, size_t len) {
             break;
         case TYPE_CHAR:
         case TYPE_BOOL:
-            du->byte_value = bytes[3];
+            du->byte_value = bytes[4];
             break;
         case TYPE_RAW:
         case TYPE_STR:
