@@ -107,7 +107,6 @@ typedef struct DataFrame {
     FrameDType data_type;
 
     union {
-        // TODO: use struct instead of pointers
         DataUnit *data_unit;
         uint8_t *raw_data;
     };
@@ -126,7 +125,6 @@ typedef struct DataUnitDTO {
     union {
         int int_value;
         uint8_t byte_value;
-        // TODO: use struct instead of pointers
         BytesArray *array_value;
     };
 } DataUnitDTO;
@@ -136,7 +134,6 @@ typedef struct DataFrameDTO {
     const uint8_t command;
     const FrameDType data_type;
     union {
-        // TODO: use struct instead of pointers
         DataUnit *data_unit;
         BytesArray *raw_data;
     };

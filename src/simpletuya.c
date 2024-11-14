@@ -32,9 +32,7 @@
 #include <string.h>
 
 
-const uint16_t TUYA_FRAME_HEADER_SHORT = 0x55AA;
 const uint8_t TUYA_FRAME_HEADER[HEADER_SIZE] = {0x55, 0xAA};
-
 const uint8_t DU_COMMAND_IDS[DU_COMMANDS_COUNT] = {0x06, 0x07, 0x22, 0x26};
 
 uint64_t bytes_to_u64(const uint8_t *bytes, size_t size) {
@@ -119,7 +117,6 @@ bool parse_byte(BytesArray *dest, uint8_t in_byte)
         }
 
         case STATE_CHECKSUM: {
-            uint8_t expected_checksum = calculate_bytes_checksum(dest->bytes, dest->len);
             dest->bytes[dest->len++] = in_byte;
             state = STATE_HEADER_HIGH;
             data_len = 0;
@@ -128,7 +125,6 @@ bool parse_byte(BytesArray *dest, uint8_t in_byte)
     }
     return false;
 }
-
 
 
 bool u8_in_array(uint8_t value, const uint8_t *array, size_t size) {
