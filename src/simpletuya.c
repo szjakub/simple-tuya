@@ -176,19 +176,25 @@ uint8_t calculate_frame_checksum(DataFrame *frame) {
 
         switch (du->type) {
             case TYPE_INT:
+            {
                 decimal_to_bytes(buffer, du->int_value);
                 du->value_len = 4;
                 break;
+            }
             case TYPE_CHAR:
             case TYPE_BOOL:
+            {
                 buffer[0] = du->byte_value;
                 du->value_len = 1;
                 break;
+            }
             case TYPE_RAW:
             case TYPE_STR:
             case TYPE_BITMAP:
+            {
                 memcpy(buffer, du->array_value, sizeof(uint8_t) * du->value_len);
                 break;
+            }
         }
 
         for (int i = 0; i < du->value_len; i++) {
@@ -243,19 +249,25 @@ char *frame_to_str(DataFrame *frame) {
 
         switch (du->type) {
             case TYPE_INT:
+            {
                 decimal_to_bytes(buffer, du->int_value);
                 du->value_len = 4;
                 break;
+            }
             case TYPE_CHAR:
             case TYPE_BOOL:
+            {
                 buffer[0] = du->byte_value;
                 du->value_len = 1;
                 break;
+            }
             case TYPE_RAW:
             case TYPE_STR:
             case TYPE_BITMAP:
+            {
                 memcpy(buffer, du->array_value, sizeof(uint8_t) * du->value_len);
                 break;
+            }
         }
 
         for (uint16_t i = 0; i < du->value_len; i++) {
@@ -307,18 +319,24 @@ DataUnit *bytes2du(uint8_t *bytes, size_t len) {
 
     switch (du->type) {
         case TYPE_INT:
+        {
             du->int_value = bytes_to_decimal(int, (bytes + 4));
             break;
+        }
         case TYPE_CHAR:
         case TYPE_BOOL:
+        {
             du->byte_value = bytes[4];
             break;
+        }
         case TYPE_RAW:
         case TYPE_STR:
         case TYPE_BITMAP:
+        {
             du->array_value = (uint8_t *) malloc(sizeof(uint8_t) * du->value_len);
             memcpy(du->array_value, bytes + 4, du->value_len);
             break;
+        }
     }
     return du;
 }
@@ -402,13 +420,17 @@ void du2bytes(uint8_t *dest, const DataUnit *du) {
         }
         case TYPE_CHAR:
         case TYPE_BOOL:
+        {
             dest[4] = du->byte_value;
             break;
+        }
         case TYPE_RAW:
         case TYPE_STR:
         case TYPE_BITMAP:
+        {
             memcpy(dest + 4, du->array_value, sizeof(uint8_t) * du->value_len);
             break;
+        }
     }
 }
 
@@ -430,13 +452,19 @@ void df2bytes(BytesArray *dest, const DataFrame *frame) {
     dest->len = DF_MIN_SIZE + frame->data_len;
     switch (frame->data_type) {
         case DT_UNIT:
+        {
             du2bytes(dest->bytes + 6, frame->data_unit);
             break;
+        }
         case DT_RAW:
+        {
             memcpy(dest->bytes + 6, frame->raw_data, sizeof(uint8_t) * frame->data_len);
             break;
+        }
         case DT_EMPTY:
+        {
             break;
+        }
     }
     dest->bytes[dest->len - 1] = frame->checksum;
 }
@@ -448,14 +476,18 @@ void init_data_unit(DataUnit *du, const DataUnitDTO *params) {
 
     switch (params->type) {
         case TYPE_INT:
+        {
             du->int_value = params->int_value;
             du->value_len = 4;
             break;
+        }
         case TYPE_BOOL:
         case TYPE_CHAR:
+        {
             du->byte_value = params->byte_value;
             du->value_len = 1;
             break;
+        }
         case TYPE_RAW:
         case TYPE_STR:
         case TYPE_BITMAP: {
