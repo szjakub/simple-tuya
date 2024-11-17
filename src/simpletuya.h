@@ -1,5 +1,5 @@
-#ifndef SIMPLETUYA_H
-#define SIMPLETUYA_H
+#ifndef SIMPLETUYA_H_
+#define SIMPLETUYA_H_
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -154,35 +154,20 @@ typedef struct
 } DataFrameDTO;
 
 bool parse_byte(ByteArray *dest, uint8_t in_byte);
-
 void u16_to_bytes(uint8_t *dest, uint16_t value);
-
 uint8_t calculate_bytes_checksum(uint8_t *bytes, size_t len);
-
 bool is_frame_valid(DataFrame *frame);
-
 char *bytes_array_to_str(ByteArray *array);
-
 char *bucket_to_str(ByteArray *array);
-
 char *frame_to_str(DataFrame *frame);
-
 void free_data_frame(DataFrame *frame);
-
 void free_data_unit(DataUnit *unit);
-
 void free_bytes_bucket(ByteArray *array);
-
 DataFrame *bytes2df(uint8_t *src, size_t len);
-
 DataUnit *bytes2du(uint8_t *src, size_t len);
-
 void du2bytes(uint8_t *dest, const DataUnit *);
-
 void df2bytes(ByteArray *dest, const DataFrame *frame);
-
 void init_data_unit(DataUnit *unit, const DataUnitDTO *params);
-
 void init_data_frame(DataFrame *frame, const DataFrameDTO *params);
 
 #define bytes_to_decimal(T, bytes)             \
@@ -206,4 +191,4 @@ void init_data_frame(DataFrame *frame, const DataFrameDTO *params);
         }                                            \
     })
 
-#endif
+#endif  // SIMPLETUYA_H_
