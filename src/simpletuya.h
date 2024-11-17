@@ -12,7 +12,8 @@
 
 #define DATA_BUFFER_SIZE 512
 
-typedef enum ParserState {
+typedef enum
+{
     STATE_HEADER_HIGH,
     STATE_HEADER_LOW,
     STATE_VERSION,
@@ -23,16 +24,18 @@ typedef enum ParserState {
     STATE_CHECKSUM
 } ParserState;
 
-typedef enum {
-    TYPE_RAW    = 0x00, // N bytes
-    TYPE_BOOL   = 0x01, // 1 byte
-    TYPE_INT    = 0x02, // 4 bytes
-    TYPE_STR    = 0x03, // N bytes
-    TYPE_CHAR   = 0x04, // 1 byte
-    TYPE_BITMAP = 0x05  // 1/2/4 bytes
+typedef enum
+{
+    TYPE_RAW    = 0x00,  // N bytes
+    TYPE_BOOL   = 0x01,  // 1 byte
+    TYPE_INT    = 0x02,  // 4 bytes
+    TYPE_STR    = 0x03,  // N bytes
+    TYPE_CHAR   = 0x04,  // 1 byte
+    TYPE_BITMAP = 0x05   // 1/2/4 bytes
 } DataType;
 
-typedef enum {
+typedef enum
+{
     // module commands
     CMD_HEALTHCHECK     = 0x00,
     CMD_QUERY_PROD_INFO = 0x01,
@@ -42,16 +45,18 @@ typedef enum {
     CMD_QUERY_STATUS    = 0x08,
 
     // MCU commands
-    CMD_RESET_MODULE    = 0x04,
-    CMD_QUERY_DATA      = 0x07,
+    CMD_RESET_MODULE = 0x04,
+    CMD_QUERY_DATA   = 0x07,
 } Command;
 
-typedef enum {
+typedef enum
+{
     STATE_RESTARTED = 0x00,
     STATE_RUNNING   = 0x01
-} LastState;
+} DeviceState;
 
-typedef enum {
+typedef enum
+{
     // The SIM card is not connected.
     STATUS_1 = 0x00,
 
@@ -79,12 +84,14 @@ typedef enum {
     STATUS_8 = 0xFF,
 } NetworkStatus;
 
-typedef struct DataUnit {
+typedef struct
+{
     uint8_t dpid;
     uint8_t type;
     uint16_t value_len;
 
-    union {
+    union
+    {
         int int_value;
         // char & bool
         uint8_t byte_value;
@@ -93,71 +100,78 @@ typedef struct DataUnit {
     };
 } DataUnit;
 
-typedef enum {
+typedef enum
+{
     DT_EMPTY = 0,
     DT_UNIT,
     DT_RAW,
 } FrameDType;
 
-typedef struct DataFrame {
+typedef struct
+{
     uint16_t header;
     uint8_t version;
     uint8_t command;
     uint16_t data_len;
     FrameDType data_type;
 
-    union {
+    union
+    {
         DataUnit *data_unit;
         uint8_t *raw_data;
     };
-
     uint8_t checksum;
 } DataFrame;
 
-typedef struct BytesArray {
+typedef struct
+{
     size_t len;
     uint8_t bytes[DATA_BUFFER_SIZE];
-} BytesArray;
+} ByteArray;
 
-typedef struct DataUnitDTO {
+typedef struct
+{
     const uint8_t dpid;
     const uint8_t type;
-    union {
+    union
+    {
         int int_value;
         uint8_t byte_value;
-        BytesArray *array_value;
+        ByteArray *array_value;
     };
 } DataUnitDTO;
 
-typedef struct DataFrameDTO {
+typedef struct
+{
     const uint8_t version;
     const uint8_t command;
     const FrameDType data_type;
-    union {
+    union
+    {
         DataUnit *data_unit;
-        BytesArray *raw_data;
+        ByteArray *raw_data;
     };
 } DataFrameDTO;
 
-bool parse_byte(BytesArray *dest, uint8_t in_byte);
+bool parse_byte(ByteArray *dest, uint8_t in_byte);
 
 void u16_to_bytes(uint8_t *dest, uint16_t value);
 
-uint8_t calculate_bytes_checksum(uint8_t *, size_t);
+uint8_t calculate_bytes_checksum(uint8_t *bytes, size_t len);
 
-bool is_frame_valid(DataFrame *);
+bool is_frame_valid(DataFrame *frame);
 
-char *bytes_array_to_str(BytesArray *);
+char *bytes_array_to_str(ByteArray *array);
 
-char *bucket_to_str(BytesArray *);
+char *bucket_to_str(ByteArray *array);
 
-char *frame_to_str(DataFrame *);
+char *frame_to_str(DataFrame *frame);
 
-void free_data_frame(DataFrame *);
+void free_data_frame(DataFrame *frame);
 
-void free_data_unit(DataUnit *);
+void free_data_unit(DataUnit *unit);
 
-void free_bytes_bucket(BytesArray *);
+void free_bytes_bucket(ByteArray *array);
 
 DataFrame *bytes2df(uint8_t *src, size_t len);
 
@@ -165,32 +179,31 @@ DataUnit *bytes2du(uint8_t *src, size_t len);
 
 void du2bytes(uint8_t *dest, const DataUnit *);
 
-void df2bytes(BytesArray *dest, const DataFrame *frame);
+void df2bytes(ByteArray *dest, const DataFrame *frame);
 
-void init_data_unit(DataUnit *du, const DataUnitDTO *params);
+void init_data_unit(DataUnit *unit, const DataUnitDTO *params);
 
 void init_data_frame(DataFrame *frame, const DataFrameDTO *params);
 
-extern const uint8_t TUYA_FRAME_HEADER[HEADER_SIZE];
+#define bytes_to_decimal(T, bytes)             \
+    ({                                         \
+        T value  = 0;                          \
+        size_t j = sizeof(T);                  \
+        for (size_t i = 0; i < sizeof(T); i++) \
+        {                                      \
+            value |= (T)bytes[--j] << (8 * i); \
+        }                                      \
+        value;                                 \
+    })
 
-#define bytes_to_decimal(T, bytes)                                \
-  ({                                                              \
-    T value = 0;                                                  \
-    size_t j = sizeof(T);                                         \
-    for (size_t i = 0; i < sizeof(T); i++) {                      \
-      value |= (T)bytes[--j] << (8 * i);                          \
-    }                                                             \
-    value;                                                        \
-  })
-
-
-#define decimal_to_bytes(dest, value)                             \
-({                                                                \
-    uint8_t *le_array = (uint8_t *) &value;                       \
-    int j = 0;                                                    \
-    for (int i=sizeof(value) - 1; i>=0; i--) {                    \
-        dest[j++] = le_array[i];                                  \
-    }                                                             \
-})
+#define decimal_to_bytes(dest, value)                \
+    ({                                               \
+        uint8_t *le_array = (uint8_t *)&value;       \
+        int j             = 0;                       \
+        for (int i = sizeof(value) - 1; i >= 0; i--) \
+        {                                            \
+            dest[j++] = le_array[i];                 \
+        }                                            \
+    })
 
 #endif
